@@ -7,6 +7,7 @@ import {
 } from './src/state/spaces.svelte.ts';
 
 const bounds = getInitialWindowBounds();
+const isMac = process.platform === 'darwin';
 
 render_hot(new URL('./App.svelte', import.meta.url), {
 	title: 'Kilo',
@@ -14,6 +15,9 @@ render_hot(new URL('./App.svelte', import.meta.url), {
 	height: bounds.height,
 	minWidth: MIN_WINDOW_WIDTH,
 	minHeight: MIN_WINDOW_HEIGHT,
+	titlebarTransparent: isMac,
+	trafficLightX: isMac ? 16 : undefined,
+	trafficLightY: isMac ? 17 : undefined,
 	rootStyle: {
 		display: 'flex',
 		width: '100%',

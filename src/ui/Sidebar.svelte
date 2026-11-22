@@ -22,6 +22,7 @@
 	let spaceMenuOpen = $state(false);
 	let spaceMenuPos = $state<{ x: number; y: number } | null>(null);
 	let spaceMenuId = $state<string | null>(null);
+	const isMac = process.platform === 'darwin';
 
 	const deleteTarget = $derived(
 		deleteTargetId ? ui.spaces.find((space) => space.id === deleteTargetId) ?? null : null
@@ -88,7 +89,11 @@
 
 <div class="side">
 	<div class="brand">
-		<div class="title">Spaces</div>
+		{#if isMac}
+			<div class="spacer"></div>
+		{:else}
+			<div class="title">Spaces</div>
+		{/if}
 		<Tooltip content={ui.dark ? 'Switch to light' : 'Switch to dark'} side="bottom" align="end">
 			{#snippet children(hover, focus)}
 				<PillButton
@@ -107,7 +112,11 @@
 		</Tooltip>
 	</div>
 
-	<ScrollArea gap={4} pad="10px">
+	{#if isMac}
+		<div class="section-head">Spaces</div>
+	{/if}
+
+	<ScrollArea gap={4} pad={isMac ? '6px 10px 10px' : '10px'}>
 		{#each ui.spaces as space (space.id)}
 			{@const count = rowsOf(space.id).length}
 			{@const selected = space.id === ui.currentId}
@@ -276,6 +285,14 @@
 		font-weight: 600;
 		white-space: nowrap;
 		color: var(--ui-ink);
+	}
+	.section-head {
+		flex-shrink: 0;
+		padding: 10px 14px 2px;
+		font-size: 11px;
+		font-weight: 600;
+		white-space: nowrap;
+		color: var(--ui-muted);
 	}
 	.space {
 		display: flex;
