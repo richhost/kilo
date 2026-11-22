@@ -1,48 +1,89 @@
 <div align="center">
-  <img src="https://github.com/richhost/pixzip-lite/blob/main/website/static/icon.webp?raw=true" height="256">
-  <h1 align="center">PixZip Lite</h1>
-  <h4 align="center">Easy to use batch image compression software.</h4>
+  <img src="./assets/icon.png" width="96" height="96" alt="Kilo" />
+  <h1>Kilo</h1>
+  <p>Fast, local-first batch image compression for desktop.</p>
+  <p>
+    <a href="https://github.com/richhost/pixzip-lite/releases">Download</a> ·
+    <a href="#features">Features</a> ·
+    <a href="#keyboard-shortcuts">Shortcuts</a> ·
+    <a href="#development">Development</a> ·
+    <a href="./LICENSE">License</a>
+  </p>
 </div>
 
-> If you want more features (compress by pixel percentage, image comparison, notification, BMP support), please use the [Pro](https://pixzip.cutelabs.in) version. 🙏
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="./assets/preview-dark.png" />
+  <source media="(prefers-color-scheme: light)" srcset="./assets/preview-light.png" />
+  <img src="./assets/preview-light.png" alt="Kilo desktop window" />
+</picture>
 
-## PixZip Lite
+## Features
 
-PixZip Lite is a fast, free image compression software that supports mainstream formats such as JPG / PNG / WebP/ AVIF, and supports Windows 10+ and macOS 12+ operating systems.
+- **Local-first & private** — All compression runs on your machine via [`sharp`](https://github.com/lovell/sharp) (`libvips`). Images and metadata are never uploaded.
+- **Reusable Spaces** — Create separate preset spaces with their own target format, quality level (`1–9`), resize bounds (`Width` / `Height` in `px`), EXIF toggle, save destination (`Original folder` or `Custom folder`), and filename suffix.
+- **5 formats supported** — Optimize **JPG**, **PNG**, **WebP**, **AVIF**, and **GIF** by dragging files or folders onto the canvas or browsing from the toolbar.
+- **Safe output handling** — Live output filename preview, automatic duplicate-name deduplication, and inline warnings whenever a preset would overwrite source files.
+- **Batch insights & quick actions** — Per-file and overall byte savings summaries, one-click reveal in folder, clipboard file copy, retry for failed items, and safe move-to-trash deletion.
+- **Native GPUI interface** — Powered by Svelte 5 and [`gpuix-svelte`](https://github.com/khromov/gpuix-svelte) without an Electron/Chromium shell, featuring virtualized list scrolling, synchronized Light/Dark modes, and the bundled [Allo](https://allo.joshpuckett.me/) typeface.
 
-![Log](https://github.com/richhost/pixzip-lite/blob/main/website/static/screenshot.webp?raw=true)
+## Keyboard Shortcuts
 
-**If you think this app is pretty good, give it a [Star](https://github.com/richhost/pixzip) ⭐️ to show your support (^-^)**
+| Windows / Linux | macOS | Action |
+| --- | --- | --- |
+| `Ctrl+O` | `⌘O` | Open image files |
+| `Ctrl+Shift+O` | `⌘⇧O` | Open folder (recursive scan) |
+| `Ctrl+Enter` | `⌘⏎` | Re-compress active Space queue |
+| `Esc` | `Esc` | Dismiss active menu, popover, or dialog |
 
 ## Install
 
-[Download](https://github.com/richhost/pixzip-lite/releases)
+Download prebuilt binaries for Windows (`x64` / `arm64`), macOS (`Apple Silicon`), and Linux (`x64`) from [GitHub Releases](https://github.com/richhost/pixzip-lite/releases).
 
-## macOS
-![macOS can't open](https://raw.githubusercontent.com/richhost/pixzip-lite/refs/heads/main/static/macOS_damaged.webp)
+> Existing PixZip Lite users keep their Spaces automatically: Kilo reads previous `pixzip-lite` settings on first launch if no `kilo` config exists yet.
 
-You can browser [https://ordonez.tv/2024/11/04/how-to-run-unsigned-apps-in-macos-15-1/](https://ordonez.tv/2024/11/04/how-to-run-unsigned-apps-in-macos-15-1/)
+## Development
 
-## Build
+Requires [Bun](https://bun.sh) (`>= 1.4.0`, needed for single-file binary builds) or Node.js (`>= 24.0.0`).
+
 ```bash
-pnpm i
+bun install
 
-# macOS Apple Silicon
-pnpm build:mac:apple
+# Launch native GPUI window with hot reload
+bun run start
 
-# macOS Intel
-pnpm build:mac:intel
+# Typecheck TypeScript and Svelte components
+bun run typecheck
 
-# Windows
-pnpm build:win
+# Run unit, platform, and headless GPUI tests
+bun run test
+
+# Build standalone single-file executable in dist/
+bun run build
+
+# Build executable, release zip archive, and update manifest fragment
+bun build.ts --archive
 ```
 
-## Thanks JetBrains
+## Architecture
 
-[![JetBrains](https://raw.githubusercontent.com/richhost/pixzip-lite/main/static/JetBrains.svg)](https://www.jetbrains.com/?from=pixzip)
+- `app.ts` / `standalone.ts` — Dev (`render_hot`) and production (`render`) desktop entrypoints.
+- `App.svelte` — Root 3-pane layout shell, window bounds persistence, theme sync, global shortcuts, and font registration.
+- `build.ts` — Embeds target `sharp` / `libvips` binaries, clipboard N-API addons, and bundled fonts into `dist/`.
+- `test.ts` — Self-contained verification suite using `gpuix-svelte/test`.
+- `src/core/` — Pure Node/Sharp domain engine (`types.ts`, `scan.ts`, `paths.ts`, `compress.ts`).
+- `src/platform/` — OS integrations, embedded native asset extraction, font registration, and Windows DWM titlebar sync.
+- `src/state/` — Svelte 5 runes stores (`spaces.svelte.ts`), compression queue, thumbnail cache, and UI actions.
+- `src/ui/` — Achromatic Ink & Paper theme tokens, vector icons, and GPUI-native Svelte components.
+- `assets/` — App icon (`icon.svg`, `icon.png`), bundled [Allo](./assets/fonts/OFL.txt) font weights, and previews.
+- `native/clipboard/` — Native clipboard addons (`darwin-arm64`, `win32-x64`).
 
-## Donate
+## Acknowledgments
 
-[![](https://storage.ko-fi.com/cdn/fullLogoKofi.png)](https://ko-fi.com/abieeyang)
+- [Svelte](https://github.com/sveltejs/svelte), [gpuix-svelte](https://github.com/khromov/gpuix-svelte), [sharp](https://github.com/lovell/sharp), and [Allo](./assets/fonts/OFL.txt) (`SIL OFL 1.1`).
+- Supported by JetBrains Open Source:
 
-[![](https://static.afdiancdn.com/static/img/logo/logo.png)](https://afdian.com/a/abiee)
+  [![JetBrains](./static/JetBrains.svg)](https://www.jetbrains.com/?from=pixzip)
+
+## Support & License
+
+Released under the [MIT License](./LICENSE). If Kilo saves you time, you can support ongoing development via [Ko-fi](https://ko-fi.com/abieeyang) or [Afdian](https://afdian.com/a/abiee).

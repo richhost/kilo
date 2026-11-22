@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <linearGradient id="rim" x1="512" y1="52" x2="512" y2="972" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.22"/>
+      <stop offset="50%" stop-color="#ffffff" stop-opacity="0.06"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.03"/>
+    </linearGradient>
+    <linearGradient id="paperTop" x1="512" y1="248" x2="512" y2="776" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#efefe9"/>
+    </linearGradient>
+    <linearGradient id="paperFold" x1="512" y1="490" x2="680" y2="776" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#c4c4bd"/>
+      <stop offset="100%" stop-color="#a2a29b"/>
+    </linearGradient>
+    <clipPath id="clipLower">
+      <path d="M436.4 501 Q444 492 466 492 L524 492 Q546 492 558.7 510 L734.3 758 Q747 776 725 776 L637 776 Q615 776 602.2 758.1 L439.8 529.9 Q427 512 434.6 503 Z"/>
+    </clipPath>
+    <filter id="tileShadow" x="-8%" y="-6%" width="116%" height="118%">
+      <feDropShadow dx="0" dy="14" stdDeviation="18" flood-color="#000000" flood-opacity="0.34"/>
+    </filter>
+    <filter id="foldShadow" x="-12%" y="-12%" width="124%" height="128%">
+      <feDropShadow dx="0" dy="14" stdDeviation="14" flood-color="#000000" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+
+  <rect x="52" y="52" width="920" height="920" rx="212" fill="#17171a" filter="url(#tileShadow)"/>
+  <rect x="53.5" y="53.5" width="917" height="917" rx="210.5" fill="none" stroke="url(#rim)" stroke-width="3"/>
+
+  <path d="M436.4 501 Q444 492 466 492 L524 492 Q546 492 558.7 510 L734.3 758 Q747 776 725 776 L637 776 Q615 776 602.2 758.1 L439.8 529.9 Q427 512 434.6 503 Z" fill="url(#paperFold)"/>
+  <g clip-path="url(#clipLower)">
+    <path d="M602.2 265.9 Q615 248 637 248 L725 248 Q747 248 734.2 265.9 L571.8 494.1 Q559 512 537 512 L449 512 Q427 512 439.8 494.1 Z" fill="#000000" filter="url(#foldShadow)"/>
+  </g>
+  <path d="M602.2 265.9 Q615 248 637 248 L725 248 Q747 248 734.2 265.9 L571.8 494.1 Q559 512 537 512 L449 512 Q427 512 439.8 494.1 Z" fill="url(#paperTop)"/>
+  <rect x="277" y="248" width="112" height="528" rx="26" fill="url(#paperTop)"/>
+  <circle cx="706" cy="512" r="40" fill="#ffffff"/>
+</svg>

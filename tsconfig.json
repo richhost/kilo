@@ -1,28 +1,24 @@
 {
 	"$schema": "https://json.schemastore.org/tsconfig",
 	"compilerOptions": {
-		"target": "ESNext",
-		"useDefineForClassFields": true,
-		"module": "ESNext",
-		"moduleResolution": "Bundler",
-		"resolveJsonModule": true,
-		"allowJs": true,
-		"checkJs": true,
-		"isolatedModules": true,
-		"moduleDetection": "force",
-		"esModuleInterop": true,
-		"lib": ["ESNext", "DOM", "DOM.Iterable"],
+		"target": "esnext",
+		"lib": ["esnext"],
+		"module": "nodenext",
+		"moduleResolution": "nodenext",
+		"customConditions": ["custom-renderer", "development"],
+		"types": ["node", "gpuix-svelte/html"],
 		"strict": true,
+		"noEmit": true,
+		"allowImportingTsExtensions": true,
+		"erasableSyntaxOnly": true,
+		"verbatimModuleSyntax": true,
+		"skipLibCheck": true,
 		"paths": {
-			"$lib": ["./src/renderer/src/lib"],
-			"$lib/*": ["./src/renderer/src/lib/*"]
+			"svelte": ["./node_modules/gpuix-svelte/node_modules/svelte"],
+			"svelte/*": ["./node_modules/gpuix-svelte/node_modules/svelte/*"]
 		}
 	},
-	"include": [
-		"./src/renderer/src/**/*.ts",
-		"./src/renderer/src/**/*.svelte",
-		"./src/preload/**/*.ts",
-		"./src/types/*.d.ts"
-	],
-	"references": [{ "path": "./tsconfig.node.json" }]
+	"svelteOptions": { "namespace": "gpuixHTML" },
+	"include": ["*.ts", "*.svelte", "src/**/*.ts", "src/**/*.svelte"],
+	"exclude": [".native-assets.ts", ".standalone-build.ts", "dist", "node_modules"]
 }
