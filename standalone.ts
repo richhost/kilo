@@ -32,7 +32,7 @@ render(App, {
 		publisher: 'CuteLabs',
 		description: 'Easy to use batch image compression software.',
 		update: {
-			manifest: 'https://github.com/richhost/pixzip-lite/releases/latest/download/update.json'
+			manifest: 'https://github.com/richhost/kilo/releases/latest/download/update.json'
 		}
 	}
 });

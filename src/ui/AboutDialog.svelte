@@ -7,7 +7,7 @@
 	import PillButton from './PillButton.svelte';
 	import { APP_ICONS } from './icons.ts';
 
-	const RELEASES_URL = 'https://github.com/richhost/pixzip-lite/releases';
+	const RELEASES_URL = 'https://github.com/richhost/kilo/releases';
 
 	const readVersion = (): string => {
 		const embedded = app_info()?.version;
@@ -110,7 +110,7 @@
 	});
 
 	const openSourceLinks = [
-		{ name: 'Kilo', url: 'https://github.com/richhost/pixzip-lite' },
+		{ name: 'Kilo', url: 'https://github.com/richhost/kilo' },
 		{ name: 'Svelte', url: 'https://github.com/sveltejs/svelte' },
 		{ name: 'gpuix-svelte', url: 'https://github.com/khromov/gpuix-svelte' },
 		{ name: 'sharp', url: 'https://github.com/lovell/sharp' },

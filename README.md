@@ -3,7 +3,7 @@
   <h1>Kilo</h1>
   <p>Fast, local-first batch image compression for desktop.</p>
   <p>
-    <a href="https://github.com/richhost/pixzip-lite/releases">Download</a> ·
+    <a href="https://github.com/richhost/kilo/releases">Download</a> ·
     <a href="#features">Features</a> ·
     <a href="#keyboard-shortcuts">Shortcuts</a> ·
     <a href="#development">Development</a> ·
@@ -37,7 +37,7 @@
 
 ## Install
 
-Download prebuilt binaries for Windows (`x64` / `arm64`), macOS (`Apple Silicon`), and Linux (`x64`) from [GitHub Releases](https://github.com/richhost/pixzip-lite/releases).
+Download prebuilt binaries for Windows (`x64` / `arm64`), macOS (`Apple Silicon`), and Linux (`x64`) from [GitHub Releases](https://github.com/richhost/kilo/releases).
 
 > Existing PixZip Lite users keep their Spaces automatically: Kilo reads previous `pixzip-lite` settings on first launch if no `kilo` config exists yet.
 
