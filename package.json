@@ -1,7 +1,7 @@
 {
 	"name": "kilo",
 	"private": true,
-	"version": "3.3.1",
+	"version": "3.4.0",
 	"type": "module",
 	"scripts": {
 		"start": "gpuix-svelte --bun app.ts",
