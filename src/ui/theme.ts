@@ -76,7 +76,10 @@ export function applyAppTheme(dark: boolean): { palette: Palette; surfaces: Surf
 		'surface-stage': surfaces.stage,
 		'surface-selected': surfaces.selected,
 		'scroller-thumb': dark ? '#34343a' : '#d1d1cc',
-		'scroller-thumb-hover': dark ? '#4a4a52' : '#b4b4ae'
+		'scroller-thumb-hover': dark ? '#4a4a52' : '#b4b4ae',
+		'segment-track': dark ? '#131315' : '#efefec',
+		'segment-thumb': dark ? '#2b2b30' : '#ffffff',
+		'segment-thumb-border': dark ? '#37373d' : '#dcdcd7'
 	});
 	return { palette, surfaces };
 }

@@ -47,7 +47,7 @@ const { clearThumbCache, getThumb } = await import('./src/state/thumbs.ts');
 const { default: App } = await import('./App.svelte');
 
 const CORE_CHECKS = 28;
-const UI_CHECKS = 9;
+const UI_CHECKS = 11;
 
 try {
 	const space = currentSpace();
@@ -376,6 +376,29 @@ try {
 				!all_text().includes('About Kilo'),
 				true
 			);
+
+			click_test_id('save-into-original');
+			check(
+				'click save-into-original selects Original folder mode',
+				currentSpace()?.originalOutput === true &&
+					!all_text().includes('Change') &&
+					!all_text().includes('Choose'),
+				true
+			);
+
+			patchSpace({ outputDir: '' });
+			settle();
+			click_test_id('save-into-custom');
+			check(
+				'click save-into-custom opens empty folder prompt without picker',
+				currentSpace()?.originalOutput === false &&
+					all_text().includes('No folder selected') &&
+					all_text().includes('Choose'),
+				true
+			);
+
+			patchSpace({ originalOutput: false, outputDir: cancelOutDir });
+			settle();
 
 			const activeSpaceId = currentSpace()?.id ?? cancelSpace.id;
 			upsertRows(activeSpaceId, [

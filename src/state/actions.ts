@@ -71,12 +71,7 @@ export const openFolder = async () => {
 export const chooseOutputDir = async () => {
 	const picked = await pick({ directories: true, files: false, prompt: 'Output folder' });
 	const dir = picked?.[0];
-	if (!dir) {
-		if (!currentSpace()?.outputDir) {
-			patchSpace({ originalOutput: true });
-		}
-		return;
-	}
+	if (!dir) return;
 	patchSpace({ originalOutput: false, outputDir: dir });
 };
 

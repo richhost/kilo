@@ -73,6 +73,9 @@
 		--surface-panel: #18181a;
 		--surface-stage: #141415;
 		--surface-selected: #232326;
+		--segment-track: #131315;
+		--segment-thumb: #2b2b30;
+		--segment-thumb-border: #37373d;
 	}
 	.app {
 		display: flex;

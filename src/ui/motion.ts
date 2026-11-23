@@ -35,3 +35,9 @@ export const toastMotion = (leaving: boolean, fromTop = false): MotionProps => {
 		transition: { duration: leaving ? 0.14 : 0.22, ease: EASE_OUT }
 	};
 };
+
+export const segmentMotion = (left: number, width: number): MotionProps => ({
+	initial: false,
+	animate: { left, width },
+	transition: { duration: 0.18, ease: EASE_OUT }
+});

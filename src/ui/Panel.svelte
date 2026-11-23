@@ -1,22 +1,26 @@
 <script lang="ts">
-	import {
-		Checkbox,
-		RadioGroup,
-		Slider,
-		TextField
-	} from 'gpuix-svelte-ui';
+	import { Checkbox, Slider, TextField } from 'gpuix-svelte-ui';
 	import { targetExtname } from '../core/paths.ts';
 	import { chooseOutputDir } from '../state/actions.ts';
 	import { currentSpace, patchSpace } from '../state/spaces.svelte.ts';
+	import { fadeMotion } from './motion.ts';
 	import PillButton from './PillButton.svelte';
 	import ScrollArea from './ScrollArea.svelte';
+	import SegmentedTabs from './SegmentedTabs.svelte';
 	import SelectField from './SelectField.svelte';
 
 	const space = $derived(currentSpace());
 	const overwriteNote = $derived.by(() => {
-		if (!space || !space.originalOutput || space.suffix !== '') return '';
+		if (!space) return '';
+		const writesToOriginal = space.originalOutput || !space.outputDir;
+		if (!writesToOriginal || space.suffix !== '') return '';
 		return space.format === 'original' ? 'Overwrites original files' : 'May overwrite matching files';
 	});
+
+	const saveTargets = [
+		{ value: 'original', label: 'Original' },
+		{ value: 'custom', label: 'Custom' }
+	];
 
 	const formats = [
 		{ value: 'original', label: 'Original' },
@@ -138,22 +142,19 @@
 
 			<div class="section section-last">
 				<div class="section-label">Save into</div>
-				<RadioGroup
+				<SegmentedTabs
+					testid="save-into"
+					label="Save into"
+					items={saveTargets}
 					value={space.originalOutput ? 'original' : 'custom'}
-					onchange={(value) => {
-						if (value === 'original') patchSpace({ originalOutput: true });
-						else if (space.outputDir) patchSpace({ originalOutput: false });
-						else chooseOutputDir();
-					}}
-					options={[
-						{ value: 'original', label: 'Original folder' },
-						{ value: 'custom', label: 'Custom folder' }
-					]}
+					onchange={(value) => patchSpace({ originalOutput: value === 'original' })}
 				/>
 				{#if !space.originalOutput}
-					<div class="dir-row">
-						<div class="dir">{space.outputDir || 'No folder selected'}</div>
-						<PillButton size="sm" variant="soft" onclick={chooseOutputDir}>
+					<div class="dir-row" motion={fadeMotion(1, 0.14)}>
+						<div class="dir" class:dir-empty={!space.outputDir}>
+							{space.outputDir || 'No folder selected'}
+						</div>
+						<PillButton size="sm" variant="soft" testid="choose-output-dir" onclick={chooseOutputDir}>
 							{space.outputDir ? 'Change' : 'Choose'}
 						</PillButton>
 					</div>
@@ -271,6 +272,9 @@
 		text-overflow: ellipsis-start;
 		background-color: var(--ui-raised);
 		color: var(--ui-ink);
+	}
+	.dir-empty {
+		color: var(--ui-muted);
 	}
 	.overwrite-warn {
 		font-size: 11px;
