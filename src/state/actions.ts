@@ -106,11 +106,11 @@ export const showFile = (row: Row) => {
 	revealPath(target);
 };
 
-export const copyFile = (row: Row) => {
+export const copyFile = async (row: Row) => {
 	const target = row.status === 'completed' ? row.outputPath : row.filepath;
 	try {
 		if (!statSync(target).isFile()) throw new Error('File is not on disk.');
-		copyFilePath(target);
+		await copyFilePath(target);
 		toast('Copied to the clipboard');
 	} catch (error) {
 		toast({

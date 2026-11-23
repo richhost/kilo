@@ -68,14 +68,13 @@ bun build.ts --archive
 
 - `app.ts` / `standalone.ts` — Dev (`render_hot`) and production (`render`) desktop entrypoints.
 - `App.svelte` — Root 3-pane layout shell, window bounds persistence, theme sync, global shortcuts, and font registration.
-- `build.ts` — Embeds target `sharp` / `libvips` binaries, clipboard N-API addons, and bundled fonts into `dist/`.
+- `build.ts` — Embeds target `sharp` / `libvips` binaries and bundled fonts into `dist/`.
 - `test.ts` — Self-contained verification suite using `gpuix-svelte/test`.
 - `src/core/` — Pure Node/Sharp domain engine (`types.ts`, `scan.ts`, `paths.ts`, `compress.ts`).
-- `src/platform/` — OS integrations, embedded native asset extraction, font registration, and Windows DWM titlebar sync.
+- `src/platform/` — OS integrations (native clipboard copy, asset extraction, font registration, and Windows DWM titlebar sync).
 - `src/state/` — Svelte 5 runes stores (`spaces.svelte.ts`), compression queue, thumbnail cache, and UI actions.
 - `src/ui/` — Achromatic Ink & Paper theme tokens, vector icons, and GPUI-native Svelte components.
 - `assets/` — App icon (`icon.svg`, `icon.png`), bundled [Allo](./assets/fonts/OFL.txt) font weights, and previews.
-- `native/clipboard/` — Native clipboard addons (`darwin-arm64`, `win32-x64`).
 
 ## Acknowledgments
 

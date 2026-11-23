@@ -1,26 +1,10 @@
 import { execFile, spawn } from 'node:child_process';
-import { createRequire } from 'node:module';
 import path from 'node:path';
 import { promisify } from 'node:util';
-import { resolveClipboardAddonPath } from './native-runtime.ts';
+
+export { copyFilePath, copyFilePaths, hasClipboardSupport } from './clipboard.ts';
 
 const execFileAsync = promisify(execFile);
-const require = createRequire(import.meta.url);
-
-type ClipboardApi = {
-	writeFilePaths: (paths: string[]) => string[];
-};
-
-export const hasClipboardSupport = () => Boolean(resolveClipboardAddonPath());
-
-export const copyFilePath = (filepath: string) => {
-	const file = resolveClipboardAddonPath();
-	if (!file) throw new Error('Clipboard addon is not available on this platform.');
-	const loaded = require(file) as ClipboardApi & { default?: ClipboardApi };
-	const api = typeof loaded.writeFilePaths === 'function' ? loaded : loaded.default;
-	if (!api?.writeFilePaths) throw new Error('Clipboard addon has no writeFilePaths.');
-	api.writeFilePaths([filepath]);
-};
 
 export const revealPath = (filepath: string) => {
 	if (process.platform === 'win32') {

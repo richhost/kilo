@@ -1,5 +1,5 @@
 // `bun build.ts` (or `bun run build`): compiles `standalone.ts` together with embedded `sharp`
-// and `clipboard` native libraries into a single self-contained platform binary under `dist/`.
+// native libraries and fonts into a single self-contained platform binary under `dist/`.
 // Pass `--archive` to also write the release zip and update fragment, or `--aot` / `--trim` to
 // opt into Bun's experimental size/startup flags.
 
@@ -89,19 +89,6 @@ function collectNativeAssets(): CollectedAsset[] {
 		throw new Error(
 			`Incomplete sharp prebuild for ${target}: nodeAddon=${hasNodeAddon}, libvips=${hasLibvips}`
 		);
-	}
-
-	const clipboardPath = path.resolve('native/clipboard', target, 'node.napi.node');
-	if (existsSync(clipboardPath)) {
-		const rel = `clipboard/${target}/node.napi.node`;
-		assets.push({
-			importPath: `./native/clipboard/${target}/node.napi.node`,
-			relativePath: rel,
-			fullPath: clipboardPath,
-			executable: currentPlatform !== 'win32'
-		});
-	} else {
-		console.warn(`Notice: clipboard addon not available for ${target} (${clipboardPath})`);
 	}
 
 	const fontsDir = path.resolve('assets', 'fonts');

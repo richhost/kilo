@@ -199,19 +199,4 @@ export function installSharpVendorHook(): void {
 	runtime.prototype.require = patched;
 }
 
-export function resolveClipboardAddonPath(): string | undefined {
-	const rel = `${process.platform}-${process.arch}/node.napi.node`;
-	const candidates: string[] = [];
-	const embeddedRoot = ensureEmbeddedNatives();
-	if (embeddedRoot) {
-		candidates.push(path.join(embeddedRoot, 'clipboard', rel));
-	}
-	candidates.push(
-		path.join(path.dirname(process.execPath), rel),
-		path.resolve(path.dirname(process.execPath), '../Resources', rel),
-		path.resolve(import.meta.dirname, '../../native/clipboard', rel)
-	);
-	return candidates.find((file) => existsSync(file));
-}
-
 installSharpVendorHook();

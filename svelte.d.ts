@@ -8,6 +8,8 @@ declare module 'bun:ffi' {
 		readonly ptr: 'ptr';
 		readonly i32: 'i32';
 		readonly u32: 'u32';
+		readonly u64: 'u64';
+		readonly void: 'void';
 	};
 
 	export type FFITypeValue = (typeof FFIType)[keyof typeof FFIType];
@@ -21,12 +23,15 @@ declare module 'bun:ffi' {
 		ptr: bigint | number | null;
 		i32: number;
 		u32: number;
+		u64: bigint | number;
 	};
 
 	export type FFIReturnMap = {
 		ptr: bigint | null;
 		i32: number;
 		u32: number;
+		u64: bigint;
+		void: undefined;
 	};
 
 	type MapArgs<T extends readonly FFITypeValue[]> = {
