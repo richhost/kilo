@@ -1,11 +1,12 @@
 <script lang="ts">
 	import { set_image, type GpuixEvent, type ShadowNode } from 'gpuix-svelte';
-	import { Icon, Menu, Tooltip } from 'gpuix-svelte-ui';
+	import { Icon, Tooltip } from 'gpuix-svelte-ui';
 	import { bytes, isSamePath, parentFolderName, savedPercent } from '../core/paths.ts';
 	import type { Row } from '../core/types.ts';
 	import { hasClipboardSupport } from '../platform/desktop.ts';
 	import { copyFile, deleteOutput, removeRow, retryRow, showFile } from '../state/actions.ts';
 	import { getThumb } from '../state/thumbs.ts';
+	import FadeMenu from './FadeMenu.svelte';
 	import { APP_ICONS } from './icons.ts';
 	import PillButton from './PillButton.svelte';
 
@@ -173,7 +174,7 @@
 			</Tooltip>
 		{/if}
 
-		<Menu
+		<FadeMenu
 			{open}
 			{items}
 			position={menuPos}
@@ -195,7 +196,7 @@
 			>
 				<Icon source={APP_ICONS.more} size={14} />
 			</PillButton>
-		</Menu>
+		</FadeMenu>
 	</div>
 </div>
 

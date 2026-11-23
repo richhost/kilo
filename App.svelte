@@ -1,11 +1,12 @@
 <script lang="ts">
 	import { on_window_key } from 'gpuix-svelte';
-	import { key_of, repeats, Toaster } from 'gpuix-svelte-ui';
+	import { key_of, repeats } from 'gpuix-svelte-ui';
 	import { syncTitlebar } from './src/platform/titlebar.ts';
 	import { registerAppFonts } from './src/platform/fonts.ts';
 	import { compressAgain, openFiles, openFolder } from './src/state/actions.ts';
 	import { setWindowBounds, ui } from './src/state/spaces.svelte.ts';
 	import Panel from './src/ui/Panel.svelte';
+	import Toaster from './src/ui/Toaster.svelte';
 	import Sidebar from './src/ui/Sidebar.svelte';
 	import Stage from './src/ui/Stage.svelte';
 	import { applyAppTheme } from './src/ui/theme.ts';
@@ -82,6 +83,7 @@
 		background-color: var(--surface-stage);
 		color: var(--ui-ink);
 		font-family: 'Allo';
+		user-select: none;
 	}
 	.body {
 		display: flex;

@@ -1,9 +1,10 @@
 <script lang="ts">
 	import { readFileSync } from 'node:fs';
 	import { app_info, check_for_update, type Update } from 'gpuix-svelte/update';
-	import { Dialog, Icon, toast } from 'gpuix-svelte-ui';
+	import { Icon, toast } from 'gpuix-svelte-ui';
 	import { activates } from 'gpuix-svelte-ui/keys';
 	import { openExternal } from '../platform/desktop.ts';
+	import FadeDialog from './FadeDialog.svelte';
 	import PillButton from './PillButton.svelte';
 	import { APP_ICONS } from './icons.ts';
 
@@ -118,7 +119,7 @@
 	];
 </script>
 
-<Dialog size="md" testid="about-dialog" {open} {onclose} title="About Kilo">
+<FadeDialog testid="about-dialog" {open} {onclose} title="About Kilo">
 	<div class="sheet">
 		<div class="identity">
 			<div class="identity-left">
@@ -219,7 +220,7 @@
 	{#snippet actions()}
 		<PillButton size="sm" variant="soft" testid="about-close" onclick={onclose}>Close</PillButton>
 	{/snippet}
-</Dialog>
+</FadeDialog>
 
 <style>
 	.sheet {

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { GpuixEvent } from 'gpuix-svelte';
-	import { Icon, Menu, Popover, Tooltip } from 'gpuix-svelte-ui';
+	import { Icon, Popover, Tooltip } from 'gpuix-svelte-ui';
+	import { activates } from 'gpuix-svelte-ui/keys';
 	import type { Space } from '../core/types.ts';
 	import { removeSpace } from '../state/actions.ts';
 	import {
@@ -12,26 +13,51 @@
 		ui
 	} from '../state/spaces.svelte.ts';
 	import AboutDialog from './AboutDialog.svelte';
+	import FadeMenu from './FadeMenu.svelte';
 	import { APP_ICONS } from './icons.ts';
+	import { dropdownMotion } from './motion.ts';
 	import PillButton from './PillButton.svelte';
 	import ScrollArea from './ScrollArea.svelte';
 
 	let aboutOpen = $state(false);
 	let deleteTargetId = $state<string | null>(null);
+	let deleteLabel = $state('Space');
 	let deletePopoverPos = $state<{ x: number; y: number } | null>(null);
+	let deleteHeld = $state(false);
+	let deleteVisible = $state(false);
 	let spaceMenuOpen = $state(false);
 	let spaceMenuPos = $state<{ x: number; y: number } | null>(null);
 	let spaceMenuId = $state<string | null>(null);
 	const isMac = process.platform === 'darwin';
 
-	const deleteTarget = $derived(
-		deleteTargetId ? ui.spaces.find((space) => space.id === deleteTargetId) ?? null : null
-	);
-
 	const closeDeletePopover = () => {
 		deleteTargetId = null;
 		deletePopoverPos = null;
 	};
+
+	const stageDelete = (id: string, pos: { x: number; y: number } | null) => {
+		const space = ui.spaces.find((item) => item.id === id);
+		deleteLabel = space?.name || 'Space';
+		deletePopoverPos = pos;
+		deleteTargetId = id;
+	};
+
+	$effect(() => {
+		if (deleteTargetId !== null) {
+			deleteHeld = true;
+			deleteVisible = true;
+			return;
+		}
+		deleteVisible = false;
+	});
+
+	const restDelete = () => {
+		if (deleteVisible) return;
+		deleteHeld = false;
+	};
+
+	const deleteOffsetY = $derived(deletePopoverPos ? -4 : 4);
+	const deleteMotion = $derived(dropdownMotion(deleteVisible, deleteOffsetY));
 
 	const confirmDeleteSpace = () => {
 		const targetId = deleteTargetId;
@@ -80,8 +106,7 @@
 			disabled: ui.spaces.length === 1,
 			onselect: () => {
 				if (!spaceMenuId) return;
-				deletePopoverPos = spaceMenuPos ? { ...spaceMenuPos } : null;
-				deleteTargetId = spaceMenuId;
+				stageDelete(spaceMenuId, spaceMenuPos ? { ...spaceMenuPos } : null);
 			}
 		}
 	]);
@@ -123,6 +148,8 @@
 			<div
 				class="space"
 				class:selected
+				role="button"
+				tabindex="0"
 				testid={`space-${space.id}`}
 				hitbox="self"
 				onclick={(e) => {
@@ -132,6 +159,7 @@
 					}
 					selectSpace(space.id);
 				}}
+				onkeydown={(e) => activates(e) && selectSpace(space.id)}
 				onauxclick={(e) => {
 					if (e.button === 2) openSpaceMenu(space.id, e);
 				}}
@@ -147,7 +175,7 @@
 		{/each}
 	</ScrollArea>
 
-	<Menu
+	<FadeMenu
 		open={spaceMenuOpen}
 		items={spaceMenuItems}
 		position={spaceMenuPos}
@@ -157,7 +185,7 @@
 		}}
 	>
 		<div class="menu-anchor"></div>
-	</Menu>
+	</FadeMenu>
 
 	<div class="foot">
 		<PillButton size="sm" variant="soft" testid="add-space" onclick={addSpace}>
@@ -166,20 +194,20 @@
 		</PillButton>
 		<div class="spacer"></div>
 		<Popover
-			open={deleteTarget !== null}
+			open={deleteHeld}
 			onclose={closeDeletePopover}
 			side={deletePopoverPos ? 'bottom' : 'top'}
 			align={deletePopoverPos ? 'start' : 'center'}
 			gap={8}
 			position={deletePopoverPos}
 			testid="delete-space-popover"
-			style="padding: 12px; border-radius: 12px; background-color: var(--surface-selected); border-color: var(--ui-border-strong);"
+			style="padding: 0; border-width: 0; background-color: transparent;"
 		>
 			<Tooltip
 				content="Delete space"
 				side="top"
 				align="center"
-				open={deleteTarget !== null ? false : null}
+				open={deleteHeld ? false : null}
 			>
 				{#snippet children(hover, focus)}
 					<PillButton
@@ -193,8 +221,7 @@
 							if (deleteTargetId === ui.currentId && deletePopoverPos === null) {
 								closeDeletePopover();
 							} else {
-								deletePopoverPos = null;
-								deleteTargetId = ui.currentId;
+								stageDelete(ui.currentId, null);
 							}
 						}}
 						{...hover}
@@ -205,10 +232,15 @@
 				{/snippet}
 			</Tooltip>
 			{#snippet content()}
-				<div class="confirm-pop">
+				<div
+					class="confirm-pop"
+					class:closing={!deleteVisible}
+					motion={deleteMotion}
+					onmotioncomplete={restDelete}
+				>
 					<div class="confirm-title">Delete space?</div>
 					<div class="confirm-body">
-						Remove "{deleteTarget?.name || 'Space'}" and clear its queued files?
+						Remove "{deleteLabel}" and clear its queued files?
 					</div>
 					<div class="confirm-actions">
 						<PillButton
@@ -308,6 +340,14 @@
 	.space:hover {
 		background-color: var(--ui-raised);
 	}
+	.space:active {
+		background-color: var(--ui-raised-hover);
+	}
+	.space:focus-visible {
+		outline-width: 2px;
+		outline-color: var(--ui-ink);
+		outline-offset: -2px;
+	}
 	.selected {
 		background-color: var(--surface-selected);
 		border-color: var(--ui-border);
@@ -373,10 +413,21 @@
 		flex-grow: 1;
 	}
 	.confirm-pop {
+		position: relative;
 		display: flex;
 		flex-direction: column;
 		gap: 6px;
-		width: 224px;
+		width: 250px;
+		padding: 12px;
+		border-radius: 12px;
+		border-width: 1px;
+		border-style: solid;
+		border-color: var(--ui-border-strong);
+		box-sizing: border-box;
+		background-color: var(--surface-selected);
+	}
+	.confirm-pop.closing {
+		pointer-events: none;
 	}
 	.confirm-title {
 		font-size: 13px;

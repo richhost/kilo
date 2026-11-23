@@ -7,6 +7,7 @@ import {
 	all_text,
 	check,
 	click_test_id,
+	clock_fast_forward,
 	finish,
 	mount_headless,
 	settle,
@@ -349,6 +350,7 @@ try {
 				true
 			);
 			click_test_id('delete-space-confirm');
+			clock_fast_forward(250);
 			check(
 				'confirming delete popover removes Space 2',
 				!ui.spaces.some((item) => item.name === 'Space 2') && !all_text().includes('Delete space?'),
@@ -368,6 +370,7 @@ try {
 				true
 			);
 			click_test_id('about-close');
+			clock_fast_forward(250);
 			check(
 				'click about-close dismisses About dialog',
 				!all_text().includes('About Kilo'),

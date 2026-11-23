@@ -27,7 +27,8 @@ render(App, {
 		width: '100%',
 		height: '100%',
 		position: 'relative',
-		fontFamily: 'Allo'
+		fontFamily: 'Allo',
+		userSelect: 'none'
 	},
 	app: {
 		name: 'Kilo',

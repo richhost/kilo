@@ -23,6 +23,7 @@ render_hot(new URL('./App.svelte', import.meta.url), {
 		width: '100%',
 		height: '100%',
 		position: 'relative',
-		fontFamily: 'Allo'
+		fontFamily: 'Allo',
+		userSelect: 'none'
 	}
 });

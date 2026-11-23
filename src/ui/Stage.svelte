@@ -142,7 +142,7 @@
 					AVIF, and GIF.
 				</div>
 				<div class="cta">
-					<PillButton size="md" onclick={openFiles}>
+					<PillButton size="md" variant="ink" onclick={openFiles}>
 						Open files
 						<Icon source={APP_ICONS.arrowRight} size={14} />
 					</PillButton>

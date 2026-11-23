@@ -1,8 +1,10 @@
 <script lang="ts">
+	import { focus_element, type ShadowNode } from 'gpuix-svelte';
 	import Popover from 'gpuix-svelte/components/Popover.svelte';
 	import { Icon } from 'gpuix-svelte-ui';
 	import { chorded, key_of, repeats, type KeyLike } from 'gpuix-svelte-ui/keys';
 	import { aria_disabled, own_hitbox, test_id, type Option } from 'gpuix-svelte-ui/shared';
+	import { dropdownMotion } from './motion.ts';
 
 	let {
 		options,
@@ -23,13 +25,30 @@
 	} = $props();
 
 	let open = $state(false);
+	let held = $state(false);
+	let visible = $state(false);
 	let active = $state(-1);
 	let width = $state<number | null>(null);
+	let triggerEl: ShadowNode | null = null;
 
 	const selected = $derived(options.find((o) => o.value === value) ?? null);
-	const popoverStyle = $derived(
-		`${width === null ? 'min-width: 180px' : `width: ${width}px`}; padding: 4px; border-radius: 10px; background-color: var(--surface-selected); border-color: var(--ui-border-strong);`
-	);
+	const popoverStyle = 'padding: 0; border-width: 0; background-color: transparent;';
+	const listStyle = $derived(width === null ? 'min-width: 180px;' : `width: ${width}px;`);
+	const listMotion = $derived(dropdownMotion(visible));
+
+	$effect(() => {
+		if (open) {
+			held = true;
+			visible = true;
+			return;
+		}
+		visible = false;
+	});
+
+	function rest() {
+		if (visible) return;
+		held = false;
+	}
 
 	function show() {
 		if (disabled) return;
@@ -39,9 +58,10 @@
 	}
 
 	function choose(option: Option) {
-		if (option.disabled) return;
+		if (!open || option.disabled) return;
 		if (option.value !== value) onchange(option.value);
 		open = false;
+		focus_element(triggerEl);
 	}
 
 	function move(delta: number) {
@@ -92,7 +112,7 @@
 >
 	{#if label}<div class="label">{label}</div>{/if}
 	<Popover
-		{open}
+		open={held}
 		onclose={() => (open = false)}
 		style={popoverStyle}
 		testid={testid ? `${testid}-list` : null}
@@ -109,6 +129,12 @@
 			{...aria_disabled(disabled)}
 			{...own_hitbox}
 			{...test_id(testid ? `${testid}-trigger` : null)}
+			{@attach (node: ShadowNode) => {
+				triggerEl = node;
+				return () => {
+					triggerEl = null;
+				};
+			}}
 			onclick={() => (open ? (open = false) : show())}
 			onkeydown={keydown}
 		>
@@ -116,7 +142,14 @@
 			<Icon name="chevron-down" size={14} />
 		</div>
 		{#snippet content()}
-			<div class="list" role="listbox">
+			<div
+				class="list"
+				class:closing={!visible}
+				style={listStyle}
+				role="listbox"
+				motion={listMotion}
+				onmotioncomplete={rest}
+			>
 				{#each options as option, i (option.value)}
 					<div
 						class="option"
@@ -201,9 +234,20 @@
 		color: var(--ui-muted);
 	}
 	.list {
+		position: relative;
 		display: flex;
 		flex-direction: column;
 		gap: 2px;
+		padding: 4px;
+		border-radius: 10px;
+		border-width: 1px;
+		border-style: solid;
+		border-color: var(--ui-border-strong);
+		box-sizing: border-box;
+		background-color: var(--surface-selected);
+	}
+	.list.closing {
+		pointer-events: none;
 	}
 	.option {
 		display: flex;
@@ -222,6 +266,9 @@
 	}
 	.option.active {
 		background-color: var(--ui-raised-hover);
+	}
+	.option:active {
+		background-color: var(--ui-border-strong);
 	}
 	.option.disabled {
 		opacity: 0.5;

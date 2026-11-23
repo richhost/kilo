@@ -268,7 +268,7 @@
 		font-size: 12px;
 		overflow: hidden;
 		white-space: nowrap;
-		text-overflow: ellipsis;
+		text-overflow: ellipsis-start;
 		background-color: var(--ui-raised);
 		color: var(--ui-ink);
 	}
@@ -299,10 +299,16 @@
 		font-size: 11px;
 	}
 	.muted {
+		flex-shrink: 0;
+		white-space: nowrap;
 		color: var(--ui-muted);
 	}
 	.suffix {
+		min-width: 0;
+		overflow: hidden;
 		font-weight: 600;
+		white-space: nowrap;
+		text-overflow: ellipsis;
 		color: var(--ui-ink);
 	}
 </style>

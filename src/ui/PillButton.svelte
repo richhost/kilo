@@ -125,11 +125,23 @@
 	.pill.danger:hover {
 		border-color: var(--ui-danger);
 	}
-	.pill:active {
-		opacity: 0.78;
+	.pill.soft:active {
+		background-color: var(--ui-border-strong);
+	}
+	.pill.ghost:active {
+		background-color: var(--ui-raised-hover);
+		color: var(--ui-ink);
+	}
+	.pill.ink:active {
+		opacity: 0.8;
+	}
+	.pill.danger:active {
+		opacity: 0.8;
 	}
 	.pill:focus-visible {
-		border-color: var(--ui-ink);
+		outline-width: 2px;
+		outline-color: var(--ui-ink);
+		outline-offset: 2px;
 	}
 	.pill.disabled {
 		opacity: 0.4;
