@@ -3,11 +3,16 @@
 	"private": true,
 	"version": "3.3.1",
 	"type": "module",
+	"packageManager": "bun@1.4.5",
+	"engines": {
+		"bun": ">=1.4.0"
+	},
 	"scripts": {
-		"start": "gpuix-svelte --bun app.ts",
-		"test": "gpuix-svelte test.ts",
+		"preinstall": "bun -e \"const ua = process.env.npm_config_user_agent || ''; if (ua.startsWith('bun/')) process.exit(0); console.error('Kilo requires Bun (>= 1.4.0). Use bun install instead.'); process.exit(1);\"",
+		"start": "bun --bun gpuix-svelte --bun app.ts",
+		"test": "bun --bun gpuix-svelte --bun test.ts",
 		"build": "bun build.ts",
-		"typecheck": "tsc --noEmit && svelte-check --diagnostic-sources js,svelte --fail-on-warnings"
+		"typecheck": "bun --bun tsc --noEmit && bun --bun svelte-check --diagnostic-sources js,svelte --fail-on-warnings"
 	},
 	"trustedDependencies": [
 		"sharp"
@@ -19,7 +24,7 @@
 		"sharp": "^0.35.5"
 	},
 	"devDependencies": {
-		"@types/node": "^26.6.6",
+		"@types/bun": "^1.4.5",
 		"svelte-check": "^4.7.8",
 		"typescript": "^5.9.3"
 	}

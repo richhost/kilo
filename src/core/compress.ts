@@ -1,6 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs';
-import { mkdir, stat, writeFile } from 'node:fs/promises';
-import { dirname, extname } from 'node:path';
+import { extname } from 'node:path';
 import { decompressFrames, parseGIF } from 'gifuct-js';
 import sharp from 'sharp';
 import type { FormatEnum, Sharp } from 'sharp';
@@ -18,9 +16,8 @@ const qualityMap: Partial<Record<SharpFormat, number>> = {
 	gif: 0.6
 };
 
-function getGifFrameCount(filepath: string): number {
-	const bytes = readFileSync(filepath);
-	const arrayBuffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+async function getGifFrameCount(filepath: string): Promise<number> {
+	const arrayBuffer = await Bun.file(filepath).arrayBuffer();
 	const gif = parseGIF(arrayBuffer);
 	return decompressFrames(gif, false).length;
 }
@@ -47,16 +44,12 @@ const animated = (filename: string): boolean => {
 	return ['gif', 'webp'].includes(ext);
 };
 
-export const fileExists = (filepath: string): boolean => {
-	return existsSync(filepath);
-};
-
-const getFormat = (task: CompressTask): SharpFormat => {
+const getFormat = async (task: CompressTask): Promise<SharpFormat> => {
 	let format = task.targetExtname as SharpFormat;
 
 	// In Windows, sharp/libvips can crash when writing a single-frame GIF.
 	if (format === 'gif' && getExtname(task.filepath) === 'gif' && process.platform === 'win32') {
-		const count = getGifFrameCount(task.filepath);
+		const count = await getGifFrameCount(task.filepath);
 		if (count === 1) {
 			format = 'png';
 		}
@@ -77,7 +70,7 @@ export const zip = async (
 	task: CompressTask
 ): Promise<{ buffer: Buffer; format: SharpFormat }> => {
 	const needAnimated = animated(task.filepath);
-	const format = getFormat(task);
+	const format = await getFormat(task);
 	const quality = getQuality(format, task.level);
 	const sharpFormat: keyof FormatEnum | 'avif' = format === 'jpg' ? 'jpeg' : format;
 
@@ -108,11 +101,9 @@ export async function output(
 	task: Pick<CompressTask, 'outputPath'>
 ): Promise<{ size: number; filepath: string }> {
 	const outFilepath = task.outputPath;
-	await mkdir(dirname(outFilepath), { recursive: true });
-	await writeFile(outFilepath, buffer);
-	const info = await stat(outFilepath);
+	const size = await Bun.write(outFilepath, buffer);
 	return {
-		size: info.size,
+		size,
 		filepath: outFilepath
 	};
 }

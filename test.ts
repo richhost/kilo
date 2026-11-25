@@ -1,5 +1,5 @@
 import './src/platform/native-runtime.ts';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { hasTestGpuixRenderer } from '@gpuix/native';
@@ -18,12 +18,13 @@ import sharp from 'sharp';
 const workDir = mkdtempSync(path.join(tmpdir(), 'kilo-test-'));
 const configDir = path.join(workDir, 'config');
 const cacheDir = path.join(workDir, 'native-cache');
-process.env.KILO_CONFIG_DIR = configDir;
-process.env.KILO_CACHE_DIR = cacheDir;
+Bun.env.KILO_CONFIG_DIR = configDir;
+Bun.env.KILO_CACHE_DIR = cacheDir;
 
 const { scanDirectory } = await import('./src/core/scan.ts');
 const { isSamePath, outputPathFor } = await import('./src/core/paths.ts');
 const { hasClipboardSupport } = await import('./src/platform/desktop.ts');
+const { shouldPreferXWayland } = await import('./src/platform/titlebar.ts');
 const {
 	clearEmbeddedNativesForTest,
 	ensureEmbeddedNatives,
@@ -46,10 +47,12 @@ const { addFiles, clearSpace, retryFile } = await import('./src/state/queue.svel
 const { clearThumbCache, getThumb } = await import('./src/state/thumbs.ts');
 const { default: App } = await import('./App.svelte');
 
-const CORE_CHECKS = 28;
+const CORE_CHECKS = 30;
 const UI_CHECKS = 11;
 
 try {
+	check('runtime is Bun', Boolean(process.versions.bun), true);
+
 	const space = currentSpace();
 	check('default space exists', Boolean(space), true);
 	if (!space) throw new Error('Expected default space');
@@ -67,9 +70,9 @@ try {
 		.png()
 		.toBuffer();
 
-	writeFileSync(samplePath, png);
-	writeFileSync(bmpPath, Buffer.from('BM'));
-	writeFileSync(txtPath, 'not an image');
+	await Bun.write(samplePath, png);
+	await Bun.write(bmpPath, Buffer.from('BM'));
+	await Bun.write(txtPath, 'not an image');
 
 	// 1. Scan filtering excludes unsupported formats (.bmp, .txt).
 	const scanned = scanDirectory(inputDir);
@@ -93,7 +96,7 @@ try {
 		const deadline = Date.now() + 20_000;
 		let row = rowsOf(spaceId).find((item) => item.filepath === filepath);
 		while (Date.now() < deadline && row?.status === 'processing') {
-			await new Promise((resolve) => setTimeout(resolve, 50));
+			await Bun.sleep(50);
 			row = rowsOf(spaceId).find((item) => item.filepath === filepath);
 		}
 		return row;
@@ -117,7 +120,7 @@ try {
 
 	// 3. Corrupt file failure handling & single-row retryFile.
 	const brokenPath = path.join(inputDir, 'broken.png');
-	writeFileSync(brokenPath, Buffer.from('not a valid png'));
+	await Bun.write(brokenPath, Buffer.from('not a valid png'));
 	const brokenScanned = scanDirectory(brokenPath);
 	addFiles(updatedSpace, brokenScanned);
 
@@ -125,7 +128,7 @@ try {
 	check('broken image fails', failedRow?.status, 'failed');
 	check('broken image populates error message', (failedRow?.error.length ?? 0) > 0, true);
 
-	writeFileSync(brokenPath, png);
+	await Bun.write(brokenPath, png);
 	check('retryFile queues broken row', retryFile(updatedSpace, path.resolve(brokenPath)), true);
 	const retriedRow = await waitForStatus(updatedSpace.id, path.resolve(brokenPath));
 	check('retried row completes', retriedRow?.status, 'completed');
@@ -141,8 +144,8 @@ try {
 	mkdirSync(dirB, { recursive: true });
 	const dupA = path.join(dirA, 'dup.png');
 	const dupB = path.join(dirB, 'dup.png');
-	writeFileSync(dupA, png);
-	writeFileSync(dupB, png);
+	await Bun.write(dupA, png);
+	await Bun.write(dupB, png);
 
 	patchSpace({
 		originalOutput: false,
@@ -170,7 +173,12 @@ try {
 	);
 	check(
 		'both deduplicated files exist on disk',
-		Boolean(rowA && rowB && existsSync(rowA.outputPath) && existsSync(rowB.outputPath)),
+		Boolean(
+			rowA &&
+				rowB &&
+				(await Bun.file(rowA.outputPath).exists()) &&
+				(await Bun.file(rowB.outputPath).exists())
+		),
 		true
 	);
 
@@ -195,7 +203,7 @@ try {
 	// 6. Stale cancellation prevents writing cancelled task output.
 	const cancelInput = path.join(workDir, 'cancel.png');
 	const cancelOutDir = path.join(workDir, 'cancel-out');
-	writeFileSync(cancelInput, png);
+	await Bun.write(cancelInput, png);
 	patchSpace({
 		originalOutput: false,
 		outputDir: cancelOutDir,
@@ -206,11 +214,11 @@ try {
 	if (!cancelSpace) throw new Error('Expected cancel space');
 	addFiles(cancelSpace, [{ path: cancelInput, size: png.length }]);
 	clearSpace(cancelSpace.id);
-	await new Promise((resolve) => setTimeout(resolve, 150));
+	await Bun.sleep(150);
 	check('cancelled space rows stay empty', rowsOf(cancelSpace.id).length, 0);
 	check(
 		'cancelled compression writes nothing to disk',
-		existsSync(path.join(cancelOutDir, 'cancel-min.webp')),
+		await Bun.file(path.join(cancelOutDir, 'cancel-min.webp')).exists(),
 		false
 	);
 
@@ -250,7 +258,7 @@ try {
 	);
 
 	const legacyConfigPath = path.join(workDir, 'legacy-config.json');
-	writeFileSync(
+	await Bun.write(
 		legacyConfigPath,
 		JSON.stringify({
 			spaces: [
@@ -299,9 +307,9 @@ try {
 	// 9. Embedded native runtime extraction, cache reuse, and old-fingerprint pruning.
 	const staleNativeDir = path.join(cacheDir, 'oldfingerprint000');
 	mkdirSync(staleNativeDir, { recursive: true });
-	writeFileSync(path.join(staleNativeDir, 'stale.txt'), 'old');
+	await Bun.write(path.join(staleNativeDir, 'stale.txt'), 'old');
 	const sourceDummy = path.join(workDir, 'dummy.bin');
-	writeFileSync(sourceDummy, 'native-payload');
+	await Bun.write(sourceDummy, 'native-payload');
 	registerEmbeddedNatives({
 		fingerprint: 'testfp0123456789',
 		assets: [{ relativePath: 'node_modules/@img/test/dummy.bin', assetPath: sourceDummy }]
@@ -313,8 +321,8 @@ try {
 		Boolean(
 			extractedDir &&
 				extractedDir === secondHit &&
-				existsSync(path.join(extractedDir, '.ready')) &&
-				readFileSync(path.join(extractedDir, 'node_modules/@img/test/dummy.bin'), 'utf8') ===
+				(await Bun.file(path.join(extractedDir, '.ready')).exists()) &&
+				(await Bun.file(path.join(extractedDir, 'node_modules/@img/test/dummy.bin')).text()) ===
 					'native-payload' &&
 				!existsSync(staleNativeDir)
 		),
@@ -322,8 +330,37 @@ try {
 	);
 	clearEmbeddedNativesForTest();
 
-	// 10. Clipboard capability helper.
+	// 10. Clipboard capability helper & Linux GNOME XWayland fallback check.
 	check('hasClipboardSupport returns boolean', typeof hasClipboardSupport(), 'boolean');
+	check(
+		'shouldPreferXWayland targets GNOME Wayland with XWayland unless opted out',
+		shouldPreferXWayland('linux', {
+			WAYLAND_DISPLAY: 'wayland-0',
+			DISPLAY: ':0',
+			XDG_CURRENT_DESKTOP: 'GNOME'
+		}) &&
+			!shouldPreferXWayland('linux', {
+				WAYLAND_DISPLAY: 'wayland-0',
+				DISPLAY: ':0',
+				XDG_CURRENT_DESKTOP: 'GNOME',
+				KILO_WAYLAND: '1'
+			}) &&
+			!shouldPreferXWayland('linux', {
+				WAYLAND_DISPLAY: 'wayland-0',
+				XDG_CURRENT_DESKTOP: 'GNOME'
+			}) &&
+			!shouldPreferXWayland('linux', {
+				WAYLAND_DISPLAY: 'wayland-0',
+				DISPLAY: ':0',
+				XDG_CURRENT_DESKTOP: 'KDE'
+			}) &&
+			!shouldPreferXWayland('darwin', {
+				WAYLAND_DISPLAY: 'wayland-0',
+				DISPLAY: ':0',
+				XDG_CURRENT_DESKTOP: 'GNOME'
+			}),
+		true
+	);
 
 	// 11. Headless GPUI hit-testing & virtual Scroller checks.
 	if (hasTestGpuixRenderer()) {

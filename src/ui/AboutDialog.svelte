@@ -1,8 +1,8 @@
 <script lang="ts">
-	import { readFileSync } from 'node:fs';
 	import { app_info, check_for_update, type Update } from 'gpuix-svelte/update';
 	import { Icon, toast } from 'gpuix-svelte-ui';
 	import { activates } from 'gpuix-svelte-ui/keys';
+	import pkg from '../../package.json';
 	import { openExternal } from '../platform/desktop.ts';
 	import FadeDialog from './FadeDialog.svelte';
 	import PillButton from './PillButton.svelte';
@@ -15,16 +15,8 @@
 		if (typeof embedded === 'string' && embedded.trim().length > 0) {
 			return embedded.trim();
 		}
-		try {
-			const raw = readFileSync(new URL('../../package.json', import.meta.url), 'utf8');
-			const parsed = JSON.parse(raw) as { version?: unknown };
-			if (typeof parsed.version === 'string' && parsed.version.trim().length > 0) {
-				return parsed.version.trim();
-			}
-		} catch {
-			// Ignore missing package.json outside repo without embedded metadata.
-		}
-		return '0.0.0';
+		const fallback = typeof pkg.version === 'string' ? pkg.version.trim() : '';
+		return fallback.length > 0 ? fallback : '0.0.0';
 	};
 
 	const {

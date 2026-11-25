@@ -1,10 +1,5 @@
-import { execFile, spawn } from 'node:child_process';
-import { existsSync } from 'node:fs';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
-import { promisify } from 'node:util';
-
-const execFileAsync = promisify(execFile);
+import { getOriginalWaylandDisplay } from './titlebar.ts';
 
 const MAC_CLIPBOARD_JXA = `
 ObjC.import('AppKit');
@@ -43,7 +38,26 @@ function buildDropFilesPayload(filepaths: string[]): Buffer {
 	return payload;
 }
 
-const waitMs = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+const isEnoent = (error: unknown): boolean =>
+	typeof error === 'object' && error !== null && 'code' in error && error.code === 'ENOENT';
+
+async function runCommand(
+	command: string,
+	args: string[],
+	options?: { env?: Record<string, string | undefined>; windowsHide?: boolean }
+): Promise<void> {
+	const proc = Bun.spawn([command, ...args], {
+		stdin: 'ignore',
+		stdout: 'ignore',
+		stderr: 'pipe',
+		...(options?.env ? { env: options.env } : {}),
+		...(options?.windowsHide !== undefined ? { windowsHide: options.windowsHide } : {})
+	});
+	const [code, stderrText] = await Promise.all([proc.exited, new Response(proc.stderr).text()]);
+	if (code !== 0) {
+		throw new Error(stderrText.trim() || `${command} exited with code ${code}.`);
+	}
+}
 
 async function initWin32Clipboard(): Promise<Win32Clipboard | null> {
 	try {
@@ -54,7 +68,7 @@ async function initWin32Clipboard(): Promise<Win32Clipboard | null> {
 			EmptyClipboard: { args: [], returns: FFIType.i32 },
 			SetClipboardData: { args: [FFIType.u32, FFIType.ptr], returns: FFIType.ptr },
 			CloseClipboard: { args: [], returns: FFIType.i32 }
-		});
+		} as const);
 
 		const kernel32 = dlopen('kernel32.dll', {
 			GlobalAlloc: { args: [FFIType.u32, FFIType.u64], returns: FFIType.ptr },
@@ -62,7 +76,7 @@ async function initWin32Clipboard(): Promise<Win32Clipboard | null> {
 			GlobalUnlock: { args: [FFIType.ptr], returns: FFIType.i32 },
 			GlobalFree: { args: [FFIType.ptr], returns: FFIType.ptr },
 			RtlMoveMemory: { args: [FFIType.ptr, FFIType.ptr, FFIType.u64], returns: FFIType.void }
-		});
+		} as const);
 
 		const instance: Win32Clipboard = {
 			async writeFilePaths(filepaths) {
@@ -89,7 +103,7 @@ async function initWin32Clipboard(): Promise<Win32Clipboard | null> {
 						opened = true;
 						break;
 					}
-					if (attempt < 4) await waitMs(15);
+					if (attempt < 4) await Bun.sleep(15);
 				}
 				if (!opened) {
 					kernel32.symbols.GlobalFree(hMem);
@@ -134,12 +148,12 @@ async function copyWindowsFallback(filepaths: string[]): Promise<void> {
 	const script =
 		"$ErrorActionPreference = 'Stop'; Add-Type -AssemblyName System.Windows.Forms; $files = New-Object System.Collections.Specialized.StringCollection; foreach ($p in @(ConvertFrom-Json $env:KILO_CLIPBOARD_PATHS)) { [void]$files.Add([string]$p) }; [System.Windows.Forms.Clipboard]::SetFileDropList($files)";
 	const args = ['-NoProfile', '-NonInteractive', '-STA', '-Command', script];
-	const env = { ...process.env, KILO_CLIPBOARD_PATHS: JSON.stringify(filepaths) };
+	const env = { ...Bun.env, KILO_CLIPBOARD_PATHS: JSON.stringify(filepaths) };
 	try {
-		await execFileAsync('powershell.exe', args, { windowsHide: true, env });
+		await runCommand('powershell.exe', args, { windowsHide: true, env });
 	} catch (error) {
-		if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-			await execFileAsync('pwsh', args, { windowsHide: true, env });
+		if (isEnoent(error)) {
+			await runCommand('pwsh', args, { windowsHide: true, env });
 			return;
 		}
 		throw error;
@@ -148,41 +162,31 @@ async function copyWindowsFallback(filepaths: string[]): Promise<void> {
 
 type LinuxClipboardTool = 'wl-copy' | 'xclip';
 
-function hasCommandInPath(command: string): boolean {
-	const pathValue = process.env.PATH ?? '';
-	for (const dir of pathValue.split(path.delimiter)) {
-		if (!dir) continue;
-		if (existsSync(path.join(dir, command))) return true;
-	}
-	return false;
-}
-
 function findLinuxClipboardTool(): LinuxClipboardTool | null {
-	const candidates: LinuxClipboardTool[] = process.env.WAYLAND_DISPLAY
+	const waylandDisplay = Bun.env.WAYLAND_DISPLAY || getOriginalWaylandDisplay();
+	const candidates: LinuxClipboardTool[] = waylandDisplay
 		? ['wl-copy', 'xclip']
 		: ['xclip', 'wl-copy'];
-	return candidates.find((tool) => hasCommandInPath(tool)) ?? null;
+	return candidates.find((tool) => Bun.which(tool) !== null) ?? null;
 }
 
-function writeToSpawnStdin(command: string, args: string[], input: string): Promise<void> {
-	return new Promise((resolve, reject) => {
-		// Ignore stdout/stderr so clipboard daemons spawned by wl-copy/xclip do not keep the pipe open.
-		const child = spawn(command, args, { stdio: ['pipe', 'ignore', 'ignore'] });
-		let settled = false;
-		const finish = (error?: Error) => {
-			if (settled) return;
-			settled = true;
-			if (error) reject(error);
-			else resolve();
-		};
-		child.on('error', finish);
-		child.stdin?.on('error', finish);
-		child.on('close', (code) => {
-			if (code === 0) finish();
-			else finish(new Error(`${command} exited with code ${code ?? 'unknown'}.`));
-		});
-		child.stdin?.end(input, 'utf8');
+async function writeToSpawnStdin(
+	command: string,
+	args: string[],
+	input: string,
+	env?: Record<string, string | undefined>
+): Promise<void> {
+	// Ignore stdout/stderr so clipboard daemons spawned by wl-copy/xclip do not keep the pipe open.
+	const proc = Bun.spawn([command, ...args], {
+		stdin: new TextEncoder().encode(input),
+		stdout: 'ignore',
+		stderr: 'ignore',
+		...(env ? { env } : {})
 	});
+	const code = await proc.exited;
+	if (code !== 0) {
+		throw new Error(`${command} exited with code ${code}.`);
+	}
 }
 
 export const hasClipboardSupport = (): boolean => {
@@ -197,20 +201,17 @@ export const copyFilePaths = async (filepaths: string[]): Promise<void> => {
 	const resolved = filepaths.map((filepath) => path.resolve(filepath));
 
 	if (process.platform === 'darwin') {
-		await execFileAsync('osascript', ['-l', 'JavaScript', '-e', MAC_CLIPBOARD_JXA], {
-			env: { ...process.env, KILO_CLIPBOARD_PATHS: JSON.stringify(resolved) }
+		await runCommand('osascript', ['-l', 'JavaScript', '-e', MAC_CLIPBOARD_JXA], {
+			env: { ...Bun.env, KILO_CLIPBOARD_PATHS: JSON.stringify(resolved) }
 		});
 		return;
 	}
 
 	if (process.platform === 'win32') {
-		const versions = process.versions as Record<string, string | undefined>;
-		if (versions.bun) {
-			const nativeClipboard = await ensureWin32Clipboard();
-			if (nativeClipboard) {
-				await nativeClipboard.writeFilePaths(resolved);
-				return;
-			}
+		const nativeClipboard = await ensureWin32Clipboard();
+		if (nativeClipboard) {
+			await nativeClipboard.writeFilePaths(resolved);
+			return;
 		}
 		await copyWindowsFallback(resolved);
 		return;
@@ -220,12 +221,17 @@ export const copyFilePaths = async (filepaths: string[]): Promise<void> => {
 	if (!tool) {
 		throw new Error('Clipboard requires wl-copy or xclip on Linux.');
 	}
-	const uriList = `${resolved.map((p) => pathToFileURL(p).href).join('\r\n')}\r\n`;
+	const uriList = `${resolved.map((p) => Bun.pathToFileURL(p).href).join('\r\n')}\r\n`;
 	const args =
 		tool === 'wl-copy'
 			? ['--type', 'text/uri-list']
 			: ['-selection', 'clipboard', '-t', 'text/uri-list', '-i'];
-	await writeToSpawnStdin(tool, args, uriList);
+	const waylandDisplay = getOriginalWaylandDisplay();
+	const spawnEnv =
+		tool === 'wl-copy' && !Bun.env.WAYLAND_DISPLAY && waylandDisplay
+			? { ...Bun.env, WAYLAND_DISPLAY: waylandDisplay }
+			: undefined;
+	await writeToSpawnStdin(tool, args, uriList, spawnEnv);
 };
 
 export const copyFilePath = (filepath: string): Promise<void> => copyFilePaths([filepath]);

@@ -1,6 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { get_native, register_font } from 'gpuix-svelte';
 import { ensureEmbeddedNatives } from './native-runtime.ts';
 
@@ -30,7 +29,7 @@ function resolveFontPath(filename: string): string | null {
 		const embeddedPath = path.join(embeddedRoot, 'fonts', filename);
 		if (existsSync(embeddedPath)) return embeddedPath;
 	}
-	const localPath = fileURLToPath(new URL(`../../assets/fonts/${filename}`, import.meta.url));
+	const localPath = Bun.fileURLToPath(new URL(`../../assets/fonts/${filename}`, import.meta.url));
 	if (existsSync(localPath)) return localPath;
 	return null;
 }

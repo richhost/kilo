@@ -11,6 +11,9 @@
   </p>
 </div>
 
+> [!NOTE]
+> **Under Active Development** — Kilo is currently under active development. Features, UI, and platform behavior are still evolving and may change.
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="./assets/preview-dark.png" />
   <source media="(prefers-color-scheme: light)" srcset="./assets/preview-light.png" />
@@ -43,7 +46,7 @@ Download prebuilt binaries for Windows (`x64` / `arm64`), macOS (`Apple Silicon`
 
 ## Development
 
-Requires [Bun](https://bun.sh) (`>= 1.4.0`, needed for single-file binary builds) or Node.js (`>= 24.0.0`).
+Requires [Bun](https://bun.sh) (`>= 1.4.0`). Node.js is not supported.
 
 ```bash
 bun install
@@ -70,7 +73,7 @@ bun build.ts --archive
 - `App.svelte` — Root 3-pane layout shell, window bounds persistence, theme sync, global shortcuts, and font registration.
 - `build.ts` — Embeds target `sharp` / `libvips` binaries and bundled fonts into `dist/`.
 - `test.ts` — Self-contained verification suite using `gpuix-svelte/test`.
-- `src/core/` — Pure Node/Sharp domain engine (`types.ts`, `scan.ts`, `paths.ts`, `compress.ts`).
+- `src/core/` — Pure Sharp domain engine (`types.ts`, `scan.ts`, `paths.ts`, `compress.ts`).
 - `src/platform/` — OS integrations (native clipboard copy, asset extraction, font registration, and Windows DWM titlebar sync).
 - `src/state/` — Svelte 5 runes stores (`spaces.svelte.ts`), compression queue, thumbnail cache, and UI actions.
 - `src/ui/` — Achromatic Ink & Paper theme tokens, vector icons, and GPUI-native Svelte components.

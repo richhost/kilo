@@ -97,13 +97,13 @@ const normalizeWindowBounds = (raw: unknown): WindowBounds | undefined => {
 
 const configBaseDir = () => {
 	return (
-		process.env.APPDATA ||
+		Bun.env.APPDATA ||
 		path.join(homedir(), process.platform === 'darwin' ? 'Library/Application Support' : '.config')
 	);
 };
 
 export const getConfigDir = () => {
-	const override = process.env.KILO_CONFIG_DIR || process.env.PIXZIP_CONFIG_DIR;
+	const override = Bun.env.KILO_CONFIG_DIR || Bun.env.PIXZIP_CONFIG_DIR;
 	if (override) {
 		return override;
 	}
@@ -123,8 +123,8 @@ const legacySpikeStoreFile = () => {
 };
 
 const legacyElectronStoreFiles = (): string[] => {
-	if (process.env.PIXZIP_LEGACY_ELECTRON_CONFIG) {
-		return [process.env.PIXZIP_LEGACY_ELECTRON_CONFIG];
+	if (Bun.env.PIXZIP_LEGACY_ELECTRON_CONFIG) {
+		return [Bun.env.PIXZIP_LEGACY_ELECTRON_CONFIG];
 	}
 	return [
 		path.join(configBaseDir(), 'PixZip Lite', 'config.json'),
@@ -166,7 +166,7 @@ const readSaved = (): Saved => {
 	const primary = readSpacesFromFile(storeFile());
 	if (primary) return primary;
 
-	const hasCustomConfigDir = Boolean(process.env.KILO_CONFIG_DIR || process.env.PIXZIP_CONFIG_DIR);
+	const hasCustomConfigDir = Boolean(Bun.env.KILO_CONFIG_DIR || Bun.env.PIXZIP_CONFIG_DIR);
 	if (!hasCustomConfigDir) {
 		const legacyPixzip = readSpacesFromFile(legacyPixzipStoreFile());
 		if (legacyPixzip) return legacyPixzip;
@@ -175,7 +175,7 @@ const readSaved = (): Saved => {
 		if (legacySpike) return legacySpike;
 	}
 
-	if (!hasCustomConfigDir || process.env.PIXZIP_LEGACY_ELECTRON_CONFIG) {
+	if (!hasCustomConfigDir || Bun.env.PIXZIP_LEGACY_ELECTRON_CONFIG) {
 		for (const candidate of legacyElectronStoreFiles()) {
 			const legacyElectron = readSpacesFromFile(candidate);
 			if (legacyElectron) return legacyElectron;

@@ -58,21 +58,21 @@ export function clearEmbeddedNativesForTest(): void {
 }
 
 export function getNativeCacheBaseDir(): string {
-	const override = process.env.KILO_CACHE_DIR || process.env.PIXZIP_CACHE_DIR;
+	const override = Bun.env.KILO_CACHE_DIR || Bun.env.PIXZIP_CACHE_DIR;
 	if (override) {
 		return override;
 	}
 	if (process.platform === 'win32') {
 		const localAppData =
-			process.env.LOCALAPPDATA ||
-			process.env.APPDATA ||
+			Bun.env.LOCALAPPDATA ||
+			Bun.env.APPDATA ||
 			path.join(homedir(), 'AppData', 'Local');
 		return path.join(localAppData, 'kilo', 'native');
 	}
 	if (process.platform === 'darwin') {
 		return path.join(homedir(), 'Library', 'Caches', 'kilo', 'native');
 	}
-	const xdgCache = process.env.XDG_CACHE_HOME || path.join(homedir(), '.cache');
+	const xdgCache = Bun.env.XDG_CACHE_HOME || path.join(homedir(), '.cache');
 	return path.join(xdgCache, 'kilo', 'native');
 }
 
@@ -169,6 +169,12 @@ function findSharpNodeFile(rootDir: string, pkg: string): string | undefined {
 	}
 }
 
+export function assertBunRuntime(): void {
+	if (!process.versions.bun) {
+		throw new Error('Kilo requires Bun (>= 1.4.0). Node.js is not supported.');
+	}
+}
+
 export function installSharpVendorHook(): void {
 	const runtime = Module as unknown as { prototype: RequirePrototype };
 	const original = runtime.prototype.require;
@@ -199,4 +205,5 @@ export function installSharpVendorHook(): void {
 	runtime.prototype.require = patched;
 }
 
+assertBunRuntime();
 installSharpVendorHook();

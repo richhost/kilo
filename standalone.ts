@@ -4,12 +4,14 @@
 import './src/platform/native-runtime.ts';
 import { render } from 'gpuix-svelte';
 import App from './App.svelte';
+import { prepareLinuxTitlebar } from './src/platform/titlebar.ts';
 import {
 	getInitialWindowBounds,
 	MIN_WINDOW_HEIGHT,
 	MIN_WINDOW_WIDTH
 } from './src/state/spaces.svelte.ts';
 
+prepareLinuxTitlebar();
 const bounds = getInitialWindowBounds();
 const isMac = process.platform === 'darwin';
 

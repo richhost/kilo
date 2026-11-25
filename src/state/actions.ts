@@ -1,4 +1,3 @@
-import { statSync } from 'node:fs';
 import { prompt_for_paths } from 'gpuix-svelte';
 import { toast } from 'gpuix-svelte-ui';
 import { isSamePath } from '../core/paths.ts';
@@ -104,7 +103,7 @@ export const showFile = (row: Row) => {
 export const copyFile = async (row: Row) => {
 	const target = row.status === 'completed' ? row.outputPath : row.filepath;
 	try {
-		if (!statSync(target).isFile()) throw new Error('File is not on disk.');
+		if (!(await Bun.file(target).stat()).isFile()) throw new Error('File is not on disk.');
 		await copyFilePath(target);
 		toast('Copied to the clipboard');
 	} catch (error) {

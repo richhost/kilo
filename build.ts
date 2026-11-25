@@ -3,18 +3,13 @@
 // Pass `--archive` to also write the release zip and update fragment, or `--aot` / `--trim` to
 // opt into Bun's experimental size/startup flags.
 
-import { createHash } from 'node:crypto';
-import {
-	existsSync,
-	readdirSync,
-	readFileSync,
-	rmSync,
-	statSync,
-	writeFileSync
-} from 'node:fs';
-import { arch, platform } from 'node:os';
+import { existsSync, readdirSync, rmSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { build } from 'gpuix-svelte/build';
+
+if (!process.versions.bun) {
+	throw new Error('Kilo build requires Bun (>= 1.4.0). Run `bun run build` instead.');
+}
 
 type CollectedAsset = {
 	importPath: string;
@@ -27,8 +22,8 @@ const NATIVE_EXT_RE = /\.(node|dll|dylib)$|\.so(\.\d+)*$/i;
 const GENERATED_ASSETS_FILE = path.resolve('.native-assets.ts');
 const GENERATED_ENTRY_FILE = path.resolve('.standalone-build.ts');
 
-const currentPlatform = platform();
-const currentArch = arch();
+const currentPlatform = process.platform;
+const currentArch = process.arch;
 const target = `${currentPlatform}-${currentArch}`;
 
 function isTargetSharpPackage(name: string): boolean {
@@ -109,10 +104,10 @@ function collectNativeAssets(): CollectedAsset[] {
 	return assets;
 }
 
-function computeFingerprint(assets: CollectedAsset[]): string {
-	const hash = createHash('sha256');
+async function computeFingerprint(assets: CollectedAsset[]): Promise<string> {
+	const hash = new Bun.CryptoHasher('sha256');
 	for (const asset of assets) {
-		const bytes = readFileSync(asset.fullPath);
+		const bytes = await Bun.file(asset.fullPath).bytes();
 		hash.update(asset.relativePath);
 		hash.update('\0');
 		hash.update(String(bytes.length));
@@ -123,7 +118,7 @@ function computeFingerprint(assets: CollectedAsset[]): string {
 }
 
 const collected = collectNativeAssets();
-const fingerprint = computeFingerprint(collected);
+const fingerprint = await computeFingerprint(collected);
 
 const importLines = collected.map(
 	(asset, index) => `import asset${index} from ${JSON.stringify(asset.importPath)} with { type: 'file' };`
@@ -146,18 +141,18 @@ const generatedAssetsSource = [
 	''
 ].join('\n');
 
-const standaloneSource = readFileSync(path.resolve('standalone.ts'), 'utf8');
+const standaloneSource = await Bun.file(path.resolve('standalone.ts')).text();
 const generatedEntrySource = `import './.native-assets.ts';\n${standaloneSource}`;
 
-writeFileSync(GENERATED_ASSETS_FILE, generatedAssetsSource);
-writeFileSync(GENERATED_ENTRY_FILE, generatedEntrySource);
+await Bun.write(GENERATED_ASSETS_FILE, generatedAssetsSource);
+await Bun.write(GENERATED_ENTRY_FILE, generatedEntrySource);
 
 try {
 	const result = await build({
 		entry: GENERATED_ENTRY_FILE,
-		archive: process.argv.includes('--archive'),
-		aot: process.argv.includes('--aot'),
-		trim: process.argv.includes('--trim')
+		archive: Bun.argv.includes('--archive'),
+		aot: Bun.argv.includes('--aot'),
+		trim: Bun.argv.includes('--trim')
 	});
 
 	console.log(

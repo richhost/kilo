@@ -1,3 +1,60 @@
+import { dlopen, FFIType, JSCallback, ptr } from 'bun:ffi';
+
+// GNOME's Wayland compositor draws no server-side titlebar and @gpuix/native@0.11.0 does not
+// expose window move, so GPUI falls back to a static non-draggable bar. On GNOME with XWayland
+// available, clearing WAYLAND_DISPLAY before GPUI initializes lets Mutter draw a native titlebar.
+const WAYLAND_ENV_KEY = Symbol.for('kilo.original-wayland-display');
+
+type GlobalWaylandEnv = typeof globalThis & {
+	[WAYLAND_ENV_KEY]?: string;
+};
+
+export function getOriginalWaylandDisplay(): string | undefined {
+	return (globalThis as GlobalWaylandEnv)[WAYLAND_ENV_KEY];
+}
+
+export function shouldPreferXWayland(
+	platform: NodeJS.Platform = process.platform,
+	env: Record<string, string | undefined> = Bun.env
+): boolean {
+	if (platform !== 'linux') return false;
+	if (env.KILO_WAYLAND === '1') return false;
+	if (!env.WAYLAND_DISPLAY || !env.DISPLAY) return false;
+	return /gnome/i.test(env.XDG_CURRENT_DESKTOP ?? '');
+}
+
+function unsetNativeEnv(name: string): boolean {
+	const key = Buffer.from(`${name}\0`);
+	for (const candidate of ['libc.so.6', 'libc.musl-x86_64.so.1', 'libc.musl-aarch64.so.1']) {
+		let lib: ReturnType<typeof dlopen<{ unsetenv: { args: [typeof FFIType.cstring]; returns: typeof FFIType.i32 } }>> | null = null;
+		try {
+			lib = dlopen(candidate, {
+				unsetenv: { args: [FFIType.cstring], returns: FFIType.i32 }
+			} as const);
+			return lib.symbols.unsetenv(key) === 0;
+		} catch {
+			// Try the next standard C library soname.
+		} finally {
+			lib?.close();
+		}
+	}
+	return false;
+}
+
+export function prepareLinuxTitlebar(): boolean {
+	if (!shouldPreferXWayland()) return false;
+	const original = Bun.env.WAYLAND_DISPLAY;
+	if (!original) return false;
+	if (!unsetNativeEnv('WAYLAND_DISPLAY')) return false;
+	if (Bun.env.WAYLAND_SOCKET) {
+		unsetNativeEnv('WAYLAND_SOCKET');
+		delete Bun.env.WAYLAND_SOCKET;
+	}
+	(globalThis as GlobalWaylandEnv)[WAYLAND_ENV_KEY] = original;
+	delete Bun.env.WAYLAND_DISPLAY;
+	return true;
+}
+
 // The in-app theme is independent of Windows, so the native caption, caption
 // text and border are painted to the same palette the panes use.
 const DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
@@ -22,25 +79,23 @@ function colorref(hex: string) {
 
 async function initWin32(): Promise<Win32Titlebar | null> {
 	try {
-		const { dlopen, FFIType, JSCallback, ptr } = await import('bun:ffi');
-
 		const user32 = dlopen('user32.dll', {
 			EnumWindows: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.i32 },
 			GetWindowThreadProcessId: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.u32 },
 			GetClassNameW: { args: [FFIType.ptr, FFIType.ptr, FFIType.i32], returns: FFIType.i32 },
 			IsWindow: { args: [FFIType.ptr], returns: FFIType.i32 }
-		});
+		} as const);
 
 		const kernel32 = dlopen('kernel32.dll', {
 			GetCurrentProcessId: { args: [], returns: FFIType.u32 }
-		});
+		} as const);
 
 		const dwmapi = dlopen('dwmapi.dll', {
 			DwmSetWindowAttribute: {
 				args: [FFIType.ptr, FFIType.u32, FFIType.ptr, FFIType.u32],
 				returns: FFIType.i32
 			}
-		});
+		} as const);
 
 		const pidBuf = Buffer.alloc(4);
 		const classBuf = Buffer.alloc(64);
@@ -109,8 +164,7 @@ export async function syncTitlebar(
 	ink: string,
 	border: string
 ): Promise<boolean> {
-	const versions = process.versions as Record<string, string | undefined>;
-	if (process.platform !== 'win32' || !versions.bun) return true;
+	if (process.platform !== 'win32') return true;
 	const state = await ensureWin32();
 	if (!state) return true;
 	return state.paint(dark, background, ink, border);
